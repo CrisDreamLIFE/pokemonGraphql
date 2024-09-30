@@ -7,5 +7,6 @@ module Types
     field :height, Integer, null: true
     field :weight, Integer, null: true
     field :base_experience, Integer, null: true
+    field :image_url, String, null: true
   end
 end

@@ -98,6 +98,9 @@ GEM
     graphql (2.3.16)
       base64
       fiber-storage
+    graphql-client (0.23.0)
+      activesupport (>= 3.0)
+      graphql (>= 1.13.0)
     httparty (0.22.0)
       csv
       mini_mime (>= 1.0.0)
@@ -227,6 +230,7 @@ DEPENDENCIES
   debug
   graphiql-rails
   graphql
+  graphql-client
   httparty
   kaminari
   propshaft (~> 1.0)

@@ -36,11 +36,12 @@ module Types
       argument :types, [String], required: false
     end
 
-    def pokemons(limit:, offset:, search: nil, types: nil)
-      puts types
-      puts "AAAAAAAAAAAAAA"
-      puts types ? "SII" : "NOO"
-      response = types ? PokeapiService.fetch_pokemons(limit, offset, types) : PokeapiService.fetch_pokemons(limit, offset, types)
+    def pokemons(limit:, offset:, search:, types: nil)
+      puts "SEARCH"
+      puts search
+      search_value = "%#{search}%"
+      puts search_value
+      response = types ? PokeapiService.fetch_pokemons(limit, offset, types, search_value) : PokeapiService.fetch_pokemons(limit, offset, types, search_value)
       #response = PokeapiService.fetch_pokemons(limit, offset, types)
     
       # Aquí puedes aplicar el filtro solo después de haber reducido el tamaño de la lista.

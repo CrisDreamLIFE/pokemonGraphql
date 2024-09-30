@@ -11,21 +11,25 @@ module PokeapiService
 
   # Definir la consulta para obtener Pokémon con tipos
   GetPokemonsWithTypes = Client.parse <<-'GRAPHQL'
-    query($limit: Int!, $offset: Int!) {
-      pokemon_v2_pokemon(limit: $limit, offset: $offset) {
-        id
-        name
-        pokemon_v2_pokemontypes {
-          pokemon_v2_type {
-            name
+    query($limit: Int!, $offset: Int!, $search: String) {
+      pokemon_v2_pokemon(
+        limit: $limit,
+        offset: $offset,
+        where: {name: {_ilike: $search }}
+        ) {
+          id
+          name
+          pokemon_v2_pokemontypes {
+            pokemon_v2_type {
+              name
+            }
+          }
+          pokemon_v2_pokemonsprites {
+            sprites
           }
         }
-        pokemon_v2_pokemonsprites {
-          sprites
-        }
-      }
     }
-  GRAPHQL
+    GRAPHQL
 
   # Definir la consulta para obtener un Pokémon específico por ID o nombre
   GetPokemonById = Client.parse <<-'GRAPHQL'
@@ -45,9 +49,35 @@ module PokeapiService
     }
   GRAPHQL
 
+#   GetPokemonBySearch = Client.parse <<-'GRAPHQL'
+#   query($limit: Int!, $offset: Int!, $search: String) {
+#     pokemon_v2_pokemon(where: {name: {_ilike: "%"+$search+"%"}}, limit: $limit, offset: $offset) {
+#       id
+#       name
+#       pokemon_v2_pokemontypes {
+#         pokemon_v2_type {
+#           name
+#         }
+#       }
+#       pokemon_v2_pokemonsprites {
+#         sprites
+#       }
+#     }
+#   }
+# GRAPHQL
+
   GetPokemonsByTypes = Client.parse <<-'GRAPHQL'
-  query($types: [String!], $limit: Int!, $offset: Int!) {
-    pokemon_v2_pokemon(where: {pokemon_v2_pokemontypes: {pokemon_v2_type: {name: {_in: $types}}}}, limit: $limit, offset: $offset) {
+  query($types: [String!], $limit: Int!, $offset: Int!, $search: String) {
+    pokemon_v2_pokemon(
+      where: {
+        _and: [
+          { pokemon_v2_pokemontypes: { pokemon_v2_type: { name: { _in: $types } } } },
+          { name: { _ilike: $search } }
+        ]
+      },
+      limit: $limit,
+      offset: $offset
+    ) {
       id
       name
       pokemon_v2_pokemontypes {
@@ -62,16 +92,13 @@ module PokeapiService
   }
 GRAPHQL
 
-def self.fetch_pokemons(limit, offset, types)
-  puts "sdffsdjifsd"
-  puts 12312312312312
-  puts types
+def self.fetch_pokemons(limit, offset, types, search)
   response = if types.present?
                # Consulta con tipos filtrados y paginación
-               Client.query(GetPokemonsByTypes, variables: { types: types, limit: limit, offset: offset })
+               Client.query(GetPokemonsByTypes, variables: { types: types, limit: limit, offset: offset, search: search })
              else
                # Consulta básica de Pokémon con paginación
-               Client.query(GetPokemonsWithTypes, variables: { limit: limit, offset: offset })
+               Client.query(GetPokemonsWithTypes, variables: { limit: limit, offset: offset, search: search })
              end
 
   response.data.pokemon_v2_pokemon.map do |pokemon|

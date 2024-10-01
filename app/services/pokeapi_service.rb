@@ -1,15 +1,12 @@
-# app/services/pokeapi_service.rb
 require 'graphql/client'
 require 'graphql/client/http'
 
 module PokeapiService
   HTTP = GraphQL::Client::HTTP.new("https://beta.pokeapi.co/graphql/v1beta")
 
-  # Definir el esquema
   Schema = GraphQL::Client.load_schema(HTTP)
   Client = GraphQL::Client.new(schema: Schema, execute: HTTP)
 
-  # Definir la consulta para obtener Pokémon con tipos
   GetPokemonsWithTypes = Client.parse <<-'GRAPHQL'
   query($limit: Int!, $offset: Int!, $search: String) {
     pokemon_v2_pokemon_aggregate(
@@ -38,7 +35,6 @@ module PokeapiService
   }
 GRAPHQL
 
-  # Definir la consulta para obtener un Pokémon específico por ID o nombre
   GetPokemonById = Client.parse <<-'GRAPHQL'
   query($id: Int) {
     pokemon_v2_pokemon(where: { id: { _eq: $id }}) {
@@ -107,10 +103,9 @@ def self.fetch_pokemons(limit, offset, types, search)
                Client.query(GetPokemonsWithTypes, variables: { limit: limit, offset: offset, search: search_query })
              end
 
-  # Manejar errores en la respuesta
   raise "Error fetching pokemons: #{response.errors}" if response.errors.any?
 
-  total_count = response.data.pokemon_v2_pokemon_aggregate.aggregate.count # Obtener el total
+  total_count = response.data.pokemon_v2_pokemon_aggregate.aggregate.count
 
   pokemons = response.data.pokemon_v2_pokemon.map do |pokemon|
     {
@@ -120,30 +115,12 @@ def self.fetch_pokemons(limit, offset, types, search)
       image_url: pokemon.pokemon_v2_pokemonsprites.map(&:sprites).first&.dig('other', 'home', 'front_default')
     }
   end
-  puts "TOTLTAAAAAL"
-  puts total_count
-  { total: total_count, pokemons: pokemons } # Devolver el total junto con los Pokémon
+  { total: total_count, pokemons: pokemons }
 end
 
-  # Método para obtener un listado de Pokémon
-  # def self.fetch_pokemons(limit, offset)
-  #   response = Client.query(GetPokemonsWithTypes, variables: { limit: limit, offset: offset})
-
-  #   response.data.pokemon_v2_pokemon.map do |pokemon|
-  #     {
-  #       id: pokemon.id,
-  #       name: pokemon.name,
-  #       types: pokemon.pokemon_v2_pokemontypes.map { |t| t.pokemon_v2_type.name },
-  #       image_url: pokemon.pokemon_v2_pokemonsprites.map(&:sprites).first&.dig('other', 'home', 'front_default') # Acceso a front_default
-  #     }
-  #   end
-  # end
-
-  # Método para obtener un Pokémon por ID o nombre
+  
   def self.fetch_pokemon_by_id(id = nil)
-     # Asegúrate de que 'id' sea un número entero.
     id_value = id.is_a?(Hash) ? id[:id] : id
-    puts "ID a buscar: #{id_value.inspect}" # Mostrará el valor correcto del ID
     response = Client.query(GetPokemonById, variables: { id: id_value})
 
     response.data.pokemon_v2_pokemon.map do |pokemon|

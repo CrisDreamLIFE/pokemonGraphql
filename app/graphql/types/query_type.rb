@@ -28,35 +28,62 @@ module Types
       "Hello World!"
     end
 
-    field :pokemons, [Types::PokemonType], null: false do
-      description "Obtener listado de Pokémon con sus tipos"
+    field :pokemons, Type::PokemonType, null: false do
       argument :limit, Integer, required: true
       argument :offset, Integer, required: true
       argument :search, String, required: false
       argument :types, [String], required: false
     end
 
-    def pokemons(limit:, offset:, search:, types: nil)
-      puts "SEARCH"
-      puts search
+    field :data, Type::DataType.connection_type, null: false do
+      argument :limit, Integer, required: true
+      argument :offset, Integer, required: true
+      argument :search, String, required: false
+      argument :types, [String], required: false
+    end
+
+    def data(limit:, offset:, search:, types: nil)
       search_value = "%#{search}%"
-      puts search_value
-      response = types ? PokeapiService.fetch_pokemons(limit, offset, types, search_value) : PokeapiService.fetch_pokemons(limit, offset, types, search_value)
-      #response = PokeapiService.fetch_pokemons(limit, offset, types)
+      response = PokeapiService.fetch_pokemons(limit, offset, types, search_value)
     
-      # Aquí puedes aplicar el filtro solo después de haber reducido el tamaño de la lista.
-      if search.present?
-        response = response.select { |pokemon| pokemon[:name].downcase.include?(search.downcase) }
-      end
+      total = response[:total]
+      pokemons = response[:pokemons]
     
-      response.map do |pokemon|
-        {
-          id: pokemon[:id],
-          name: pokemon[:name],
-          types: pokemon[:types],
-          image_url: pokemon[:image_url]
-        }
-      end
+      
+      {
+        total: total,
+        pokemons: pokemons.map do |pokemon|
+          {
+            id: pokemon[:id],
+            name: pokemon[:name],
+            types: pokemon[:types],
+            image_url: pokemon[:image_url]
+          }
+        end
+      }
+    end
+
+    def pokemons(limit:, offset:, search:, types: nil)
+      search_value = "%#{search}%"
+      response = PokeapiService.fetch_pokemons(limit, offset, types, search_value)
+    
+      total = response[:total]
+      pokemons = response[:pokemons]
+    
+      
+      results = {
+        total: total,
+        data: pokemons.map do |pokemon|
+          {
+            id: pokemon[:id],
+            name: pokemon[:name],
+            types: pokemon[:types],
+            image_url: pokemon[:image_url]
+          }
+        end
+      }
+      Connections::PokemonConnection.new(results)
+      
     end
 
     # def pokemons(limit:, offset:, search: nil, type: nil)

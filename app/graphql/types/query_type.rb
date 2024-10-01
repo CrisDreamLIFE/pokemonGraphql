@@ -28,6 +28,29 @@ module Types
       "Hello World!"
     end
 
+    field :pokemon_list, Types::PokemonListType, null: false do
+      description "Obtener listado de Pokémon con sus tipos"
+      argument :limit, Integer, required: true
+      argument :offset, Integer, required: true
+      argument :search, String, required: false
+      argument :types, [String], required: false
+    end
+
+    def pokemon_list(limit:, offset:, search:, types: nil)
+      puts "SEARCH"
+      puts search
+      search_value = "%#{search}%"
+      puts search_value
+      response = types ? PokeapiService.fetch_pokemons(limit, offset, types, search_value) : PokeapiService.fetch_pokemons(limit, offset, types, search_value)
+      #response = PokeapiService.fetch_pokemons(limit, offset, types)
+      
+      puts "RESPONSEE"
+      puts response
+      {
+        list: response[:pokemons], total: response[:total]
+      }
+    end
+
     field :pokemons, [Types::PokemonType], null: false do
       description "Obtener listado de Pokémon con sus tipos"
       argument :limit, Integer, required: true
@@ -43,13 +66,11 @@ module Types
       puts search_value
       response = types ? PokeapiService.fetch_pokemons(limit, offset, types, search_value) : PokeapiService.fetch_pokemons(limit, offset, types, search_value)
       #response = PokeapiService.fetch_pokemons(limit, offset, types)
-    
-      # Aquí puedes aplicar el filtro solo después de haber reducido el tamaño de la lista.
-      if search.present?
-        response = response.select { |pokemon| pokemon[:name].downcase.include?(search.downcase) }
-      end
-    
-      response.map do |pokemon|
+      
+      puts "RESPONSEE"
+      puts response
+         
+      response[:pokemons].map do |pokemon|
         {
           id: pokemon[:id],
           name: pokemon[:name],
@@ -59,64 +80,15 @@ module Types
       end
     end
 
-    # def pokemons(limit:, offset:, search: nil, type: nil)
-    #   # Filtrar Pokémon por nombre si se proporciona `search`
-    #   if search.present?
-    #     response = response.select { |pokemon| pokemon[:name].downcase.include?(search.downcase) }
-    #   end
-    #   # Obtener Pokémon desde la API de PokeAPI
-    #   response = PokeapiService.fetch_pokemons(limit, offset, type)
-    
-      
-    
-    #   response.map do |pokemon|
-    #     {
-    #       id: pokemon[:id],
-    #       name: pokemon[:name],
-    #       types: pokemon[:types],
-    #       image_url: pokemon[:image_url] # Asegúrate de incluir image_url aquí
-    #     }
-    #   end
-    # end
-
-
-     # Query para obtener una lista de Pokémon con paginación
-    #  field :pokemons, [Types::PokemonType], null: false do
-    #   description "Lista de Pokémon con opciones de paginación y filtros"
-    #   argument :limit, Integer, required: false, default_value: 10
-    #   argument :offset, Integer, required: false, default_value: 0
-    #   argument :search, String, required: false
-    #   argument :type, String, required: false
-    # end
-
-    # def pokemons(limit:, offset:, search: nil, type: nil)
-    #   if type.present?
-    #     url = "https://pokeapi.co/api/v2/type/#{type}"
-    #     response = HTTParty.get(url)
-    #     pokemons = response["pokemon"].map { |p| p["pokemon"] }
-        
-    #     paginated_pokemons = pokemons[offset, limit] || []
-
-    #   else
-    #     url = "https://pokeapi.co/api/v2/pokemon?limit=#{limit}&offset=#{offset}"
-    #     response = HTTParty.get(url)
-    #     pokemons = response["results"]
-    
-    #     paginated_pokemons = pokemons
-    #   end
-
-    # end
-
     # Query para obtener los detalles de un Pokémon específico
     field :pokemon, Types::PokemonType, null: false do
-      description "Obtener detalles de un Pokémon por su nombre o ID"
+      description "Obtener detalles de un Pokémon por su ID"
       argument :id, Integer, required: false
-      argument :name, String, required: false
     end
 
-    def pokemon(id: nil, name: nil)
+    def pokemon(id: nil)
       # Asegúrate de que se proporcione un ID o un nombre
-      raise GraphQL::ExecutionError, "Se requiere un ID o un nombre para buscar el Pokémon" unless id || name
+      raise GraphQL::ExecutionError, "Se requiere un ID para buscar el Pokémon" unless id
     
       # Realizar la consulta a la API GraphQL
       response = PokeapiService.fetch_pokemon_by_id(id: id) if id
